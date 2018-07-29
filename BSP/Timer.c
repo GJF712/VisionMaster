@@ -6,9 +6,9 @@
  */
 
 #include "Timer.h"
-#include "led.h"
 #include <limits.h>
 #include "Usart1.h"
+#include "App.h"
 
 void TIM14_Compare1Set(uint16_t _0_1ms){//µ¥Î»0.1ms
     TIM_SetCompare1(TIM14,TIM_GetCounter(TIM14) + _0_1ms);
@@ -154,14 +154,10 @@ void TIM14_NVIC_Config(uint8_t Priority)
 
 void TIM3_IRQ(void)
 {
-	static uint16_t LED_FlickerCount = 1;
     if(TIM_GetITStatus(TIM3, TIM_IT_Update) == SET)
     {
         TIM_ClearITPendingBit(TIM3,TIM_FLAG_Update);
-		if(LED_FlickerCount++ == 500){
-			LED_FlickerCount = 0;
-			LED_Flicker();
-		}
+		Schedule_MS++;
     }
 }
 

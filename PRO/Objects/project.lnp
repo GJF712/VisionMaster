@@ -5,8 +5,10 @@
 ".\objects\bsp.o"
 ".\objects\usart1.o"
 ".\objects\timer.o"
-".\objects\led.o"
 ".\objects\externalinterruption.o"
+".\objects\adc1.o"
+".\objects\commongpio.o"
+".\objects\i2c1.o"
 ".\objects\startup_stm32f030.o"
 ".\objects\system_stm32f0xx.o"
 ".\objects\stm32f0xx_adc.o"
@@ -34,6 +36,6 @@
 ".\objects\stm32f0xx_wwdg.o"
 ".\objects\multi_button.o"
 --strict --scatter ".\Objects\project.sct"
---summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list ".\Listings\project.map" -o .\Objects\project.axf
