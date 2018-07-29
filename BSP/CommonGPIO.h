@@ -17,6 +17,7 @@ typedef enum{
 	LED_Max,
 }Ctrl_LED_COLOR_T;
 
+//共阳发光二极管
 typedef enum{
 	LED_ON_STATE,
 	LED_OFF_STATE,
@@ -26,6 +27,14 @@ typedef enum{
 void LED_Init(void);
 void LED_Flicker(void);
 
-void Key_PA0_INIT(void);
+void LEDs_Init(void);
+void Ctrl_LEDFunc(Ctrl_LED_COLOR_T Color, Ctrl_LED_STATE_T State);
+void Ctrl_LEDsFunc(void);
+
+void TX2_POWER_BTNInit(void);
+void TX2_POWER_ON(void);
+void TX2_POWER_OFF(void);
+
+void Key_PA0_Init(void);
 
 #endif /* BSP_LED_H_ */

@@ -12,9 +12,14 @@ typedef struct{
 	void (* const APP_Function)(void);
 }App_Schedule_T;
 
+typedef struct{
+	bool Event_flag;
+	void (* const APP_Function)(void);
+}App_Event_T;
+
 extern volatile Schedule_TimerDataType Schedule_MS;
 
 void App_Init(void);
-bool MS_TimerTrigger(Schedule_TimerDataType * const Last_TimerCounter, Schedule_TimerDataType const * const MS_Timer);
+bool MS_TimerTrigger(Schedule_TimerDataType * const Last_TimerCounter, Schedule_TimerDataType const MS_Timer);
 
 #endif

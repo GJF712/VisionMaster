@@ -36,11 +36,19 @@ SOFTWARE.
 #include "CommonGPIO.h"
 #include "ADC1.h"
 #include "multi_button.h" 
+#include "I2C1.h"
+#include "ExternalInterruption.h"
 
+static App_Event_T * App_EventFunc[] = {
+	&EXTI4_Event,
+	NULL, };
 static App_Schedule_T App_ScheduleFunc[] = {
 	{0, 500, LED_Flicker},
 	{0, 50, ADC1_StartTask},
 	{0, TICKS_INTERVAL, button_ticks},
+	{0, 500, I2C_CheckBusy},
+	{0, 10, Ctrl_LEDsFunc},
+	
 	{0, 0, NULL}, };//门限不可更改
 
 //循环累加校验和
@@ -55,41 +63,26 @@ uint8_t Check_Sum(uint8_t *Data, uint8_t len){
 int main(void)
 {
 	static App_Schedule_T *pApp_ScheduleFunc = App_ScheduleFunc;
+	static App_Event_T **pApp_EventFunc = App_EventFunc;
 	/* TODO - Add your application code here */
 	Bsp_Init();
 
 	/* Infinite loop */
 	while (1)
-	{
-		if(Set_Usart1Data()->RXFinshFlag){//串口处理
-			USART1_DATA_T *_Data = Set_Usart1Data();
-			if((_Data->Len == 9) && (_Data->Data[_Data->Len - 1] == Check_Sum(_Data->Data, _Data->Len - 1))){
-				float x,y;
-				memcpy(&x, &_Data->Data[0], 4);
-				memcpy(&y, &_Data->Data[4], 4);
-				if(x < -180){
-					x = -180;
-				}else if(x > 180){
-					x = 180;
-				}
-				if(y < -180){
-					y = -180;
-				}else if(y > 180){
-					y = 180;
-				}
-				TIM_SetCompare1(TIM16, x * 5 / 9 + 150);
-				TIM_SetCompare1(TIM17, y * 5 / 9 + 150);
-			}
-			_Data->RXFinshFlag = 0;
-			_Data->Len = 0;
-			USART1_RXEnable();
-		}
-		
-		if(MS_TimerTrigger(&pApp_ScheduleFunc->MS_Counting, &pApp_ScheduleFunc->MS_Timer)){//LED闪烁
+	{		
+		if(MS_TimerTrigger(&pApp_ScheduleFunc->MS_Counting, pApp_ScheduleFunc->MS_Timer)){//LED闪烁
 			pApp_ScheduleFunc->APP_Function();
 		}
 		if((++pApp_ScheduleFunc)->APP_Function == NULL){
 			pApp_ScheduleFunc = App_ScheduleFunc;
+		}
+		
+		if((*pApp_EventFunc)->Event_flag){
+			(*pApp_EventFunc)->APP_Function();
+			(*pApp_EventFunc)->Event_flag = false;
+		}
+		if(*(++pApp_EventFunc) == NULL){
+			pApp_EventFunc = App_EventFunc;
 		}
 	}
 }

@@ -124,6 +124,11 @@ void EXTI0_1_IRQHandler(void)
 	EXTI0_1_IRQ();
 }
 
+void EXTI4_15_IRQHandler(void)
+{
+	EXTI4_15_IRQ();
+}
+
 /******************************************************************************/
 /*                 STM32F0xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

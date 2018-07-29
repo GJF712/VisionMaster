@@ -75,7 +75,7 @@ void I2C1_Init(void)
 //==========================================================================================================================
 
 //==========================================================================================================================
-static void I2C_CheckBusy(void){
+void I2C_CheckBusy(void){
 	uint16_t I2C_Timeout = 0;
 	
 	static uint8_t Count = 0;
@@ -172,22 +172,89 @@ b:	I2C_CheckBusy();
 	return Index;
 }
 
-//void I2C1_GetData_EventTask(uint8_t DataAddress, uint16_t Len){//处理读回来的数据
-//	if((((DataAddress >> 4) - 1) < I2C1_Num_Max_ID) && (Len == I2C1_DataLen[(DataAddress >> 4) - 1])&& (Sum_Checking(Buffer_Rx, Len - 1) == Buffer_Rx[Len - 1])){
-//		switch(DataAddress){
-//			case Calibration_ID://校准
-//				break;
-//        	case Relay_ID:
-//				Set_RelayState(Buffer_Rx[I2C1_Data_First_ID]);
-//        		break;
-//        	case Input_4_20MA_ID:
-//				memcpy(&ADC_CH0_DataBuff, &Buffer_Rx[I2C1_Data_First_ID], sizeof(float));
-//        		break;
-//        	case Output_4_20MA_ID:
-//				Set_DAC4_20MA_Data(*(float *)&Buffer_Rx[I2C1_Data_First_ID]);
-//        		break;
-//        	default:
-//        		break;
-//        }
-//	}
-//}
+
+//=====================================================================================
+//应用层处理
+//=====================================================================================
+#define TUSB422_I2CAddr	0x40
+uint8_t I2C_Buff[16];
+void TUSB422_BoostTo20V(void){
+	uint16_t VoltageScale = 20 / 5;
+	I2C_Buff[0] = VoltageScale & 0xff;
+	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(0x40, 0x70, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+#define BQ25703A_I2CAddr 0x12
+
+static void MinSystemVoltage(void){
+	uint16_t Voltage = 12800;
+	I2C_Buff[0] = Voltage & 0x00;
+	I2C_Buff[1] = (Voltage >> 8) & 0x3f;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x0C, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x0C, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+static void ChargeCurrent(void){//不能配置成1000mA，实际是960mA
+	uint16_t Current = 1000;
+	I2C_Buff[0] = Current & 0xC0;
+	I2C_Buff[1] = (Current >> 8) & 0x3F;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x02, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x02, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+static void MaxChargeVoltage(void){
+	uint16_t Voltage = 16800;
+	I2C_Buff[0] = Voltage & 0xf0;
+	I2C_Buff[1] = (Voltage >> 8) & 0x7f;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x04, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x04, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+static void OTGCurrent(void){
+	uint16_t Current = 2000;
+	I2C_Buff[0] = 0;
+	I2C_Buff[1] = Current / 50;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x08, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x08, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+static void OTGVoltage(void){//不能配置成20000mV，实际是19968mA
+	uint16_t Voltage = 20000 - 4480;
+	I2C_Buff[0] = Voltage & 0xC0;
+	I2C_Buff[1] = (Voltage >> 8) & 0x3f;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x06, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x06, I2C_Buff, 2) != 2){
+		}
+	}
+}
+	
+static void IIN_DPM(void){
+	uint16_t Current = 3250;
+	I2C_Buff[0] = 0;
+	I2C_Buff[1] = (Current / 50) & 0x7f;
+	if(IIC_WriteData(BQ25703A_I2CAddr, 0x24, I2C_Buff, 2) != 2){		
+		if(IIC_WriteData(BQ25703A_I2CAddr, 0x24, I2C_Buff, 2) != 2){
+		}
+	}
+}
+
+void BQ25703A_Init(void){
+	IIN_DPM();
+	OTGVoltage();
+	OTGCurrent();
+	MaxChargeVoltage();
+	ChargeCurrent();
+	MinSystemVoltage();
+}
