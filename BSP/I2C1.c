@@ -22,26 +22,31 @@ static void I2C1_GPIOInit(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_StructInit(&GPIO_InitStructure);
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;	
+	
+#ifdef STM32F030	
 	/* Connect PA9 to I2C_SCL */
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_4);
 	/* Configure PA10 pins: SDA */
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_4);
 	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;	
-
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-//    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-//    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-//    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-//    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;	
-//    GPIO_Init(GPIOA, &GPIO_InitStructure);
+#elif defined(STM32F070)
+	/* Connect PF1 to I2C_SCL */
+	GPIO_PinAFConfig(GPIOF, GPIO_PinSource0, GPIO_AF_4);
+	/* Configure PF0 pins: SDA */
+	GPIO_PinAFConfig(GPIOF, GPIO_PinSource1, GPIO_AF_4);
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+    GPIO_Init(GPIOF, &GPIO_InitStructure);
+#else
+	#error "I2C1 don't select MCU!"
+#endif
 }
 
 void I2C1_Config(void)

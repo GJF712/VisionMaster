@@ -60,34 +60,58 @@ void Ctrl_LEDFunc(Ctrl_LED_COLOR_T Color, Ctrl_LED_STATE_T State){
 	GPIO_WriteBit(GPIOA, Color, (BitAction)State);
 }
 
-static Schedule_TimerDataType Last_TimerCounter = 0;
-typedef struct{
-	Schedule_TimerDataType MS_Timer;
-	Ctrl_LED_STATE_T State;
-}LED_G_Flicker_T;
-
-const LED_G_Flicker_T LED_FlickerCtrl[] = {
-	{90, LED_ON_STATE}, {10, LED_OFF_STATE},
-	{80, LED_ON_STATE}, {20, LED_OFF_STATE},
-	{70, LED_ON_STATE}, {30, LED_OFF_STATE},
-	{60, LED_ON_STATE}, {40, LED_OFF_STATE},
-	{50, LED_ON_STATE}, {50, LED_OFF_STATE},
-	{40, LED_ON_STATE}, {60, LED_OFF_STATE},
-	{30, LED_ON_STATE}, {70, LED_OFF_STATE},
-	{20, LED_ON_STATE}, {80, LED_OFF_STATE},
-	{10, LED_ON_STATE}, {4000, LED_OFF_STATE},
-	{0,},//门限
-};
-	
-static LED_G_Flicker_T const *pLED_FlickerCtrl = LED_FlickerCtrl;
-
 void Ctrl_LEDsFunc(void){
+	typedef struct{
+		Schedule_TimerDataType PWMMS_Timer;
+		Ctrl_LED_STATE_T State;
+	}LED_PWM_Flicker_T;
+	typedef struct{
+		Schedule_TimerDataType MS_Timer;
+		LED_PWM_Flicker_T PWM_F[2];
+	}LED_Flicker_T;
+	const static LED_Flicker_T LED_FlickerCtrl[] = {
+		{3000, {{0, LED_ON_STATE}, {10, LED_OFF_STATE}}},
+		{100, {{1, LED_ON_STATE}, {9, LED_OFF_STATE}}},
+		{100, {{2, LED_ON_STATE}, {8, LED_OFF_STATE}}},
+		{100, {{3, LED_ON_STATE}, {7, LED_OFF_STATE}}},
+		{100, {{4, LED_ON_STATE}, {6, LED_OFF_STATE}}},
+		{100, {{5, LED_ON_STATE}, {5, LED_OFF_STATE}}},
+		{100, {{6, LED_ON_STATE}, {4, LED_OFF_STATE}}},
+		{100, {{7, LED_ON_STATE}, {3, LED_OFF_STATE}}},
+		{100, {{8, LED_ON_STATE}, {2, LED_OFF_STATE}}},
+		{100, {{9, LED_ON_STATE}, {1, LED_OFF_STATE}}},
+		{100, {{10, LED_ON_STATE}, {0, LED_OFF_STATE}}},
+		{100, {{10, LED_ON_STATE}, {0, LED_OFF_STATE}}},
+		{100, {{9, LED_ON_STATE}, {1, LED_OFF_STATE}}},
+		{100, {{8, LED_ON_STATE}, {2, LED_OFF_STATE}}},
+		{100, {{7, LED_ON_STATE}, {3, LED_OFF_STATE}}},
+		{100, {{6, LED_ON_STATE}, {4, LED_OFF_STATE}}},
+		{100, {{5, LED_ON_STATE}, {5, LED_OFF_STATE}}},
+		{100, {{4, LED_ON_STATE}, {6, LED_OFF_STATE}}},
+		{100, {{3, LED_ON_STATE}, {7, LED_OFF_STATE}}},
+		{100, {{2, LED_ON_STATE}, {8, LED_OFF_STATE}}},
+		{100, {{1, LED_ON_STATE}, {9, LED_OFF_STATE}}},
+		{0,},//门限
+	};
+	
+	static Schedule_TimerDataType Last_TimerCounter = 0;
+	static Schedule_TimerDataType Last_PWMTimerCounter = 0;
+	static uint8_t SwitchLight = 0;
+	static LED_Flicker_T const *pLED_FlickerCtrl = &LED_FlickerCtrl[0];
+	static LED_PWM_Flicker_T const *pLED_PWM_FlickerCtrl = LED_FlickerCtrl[0].PWM_F;
+
 	if(MS_TimerTrigger(&Last_TimerCounter, pLED_FlickerCtrl->MS_Timer)){
 		pLED_FlickerCtrl++;
 		if(pLED_FlickerCtrl->MS_Timer == 0){
-			pLED_FlickerCtrl = LED_FlickerCtrl;
+			pLED_FlickerCtrl = &LED_FlickerCtrl[0];
 		}
-		Ctrl_LEDFunc(LED_G, pLED_FlickerCtrl->State);
+	}	
+	if(MS_TimerTrigger(&Last_PWMTimerCounter, pLED_PWM_FlickerCtrl->PWMMS_Timer)){
+		SwitchLight = !SwitchLight;
+		pLED_PWM_FlickerCtrl = &pLED_FlickerCtrl->PWM_F[SwitchLight];
+		if(pLED_PWM_FlickerCtrl->PWMMS_Timer != 0){
+			Ctrl_LEDFunc(LED_T, pLED_PWM_FlickerCtrl->State);
+		}
 	}
 }
 

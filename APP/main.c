@@ -43,11 +43,11 @@ static App_Event_T * App_EventFunc[] = {
 	&EXTI4_Event,
 	NULL, };
 static App_Schedule_T App_ScheduleFunc[] = {
-	{0, 500, LED_Flicker},
+//	{0, 500, LED_Flicker},
 	{0, 50, ADC1_StartTask},
 	{0, TICKS_INTERVAL, button_ticks},
 	{0, 500, I2C_CheckBusy},
-	{0, 10, Ctrl_LEDsFunc},
+	{0, 1, Ctrl_LEDsFunc},
 	
 	{0, 0, NULL}, };//门限不可更改
 

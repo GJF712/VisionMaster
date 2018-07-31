@@ -11,6 +11,7 @@
 #include "stm32f0xx.h"
 
 typedef enum{
+	LED_T = GPIO_Pin_4,
 	LED_G = GPIO_Pin_5,
 	LED_R = GPIO_Pin_6,
 	LED_B = GPIO_Pin_7,
