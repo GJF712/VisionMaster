@@ -183,8 +183,11 @@ b:	I2C_CheckBusy();
 //=====================================================================================
 #define TUSB422_I2CAddr	0x40
 uint8_t I2C_Buff[16];
-void TUSB422_BoostTo20V(void){
+void TUSB422_BoostTo20V(bool *Event_flag){
 	uint16_t VoltageScale = 20 / 5;
+	
+	*Event_flag = false;
+	
 	I2C_Buff[0] = VoltageScale & 0xff;
 	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
 	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) != 2){		
@@ -216,7 +219,7 @@ static void ChargeCurrent(void){//不能配置成1000mA，实际是960mA
 }
 
 static void MaxChargeVoltage(void){
-	uint16_t Voltage = 16800;
+	uint16_t Voltage = BatteryVoltage;
 	I2C_Buff[0] = Voltage & 0xf0;
 	I2C_Buff[1] = (Voltage >> 8) & 0x7f;
 	if(IIC_WriteData(BQ25703A_I2CAddr, 0x04, I2C_Buff, 2) != 2){		

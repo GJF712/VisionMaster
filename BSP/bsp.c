@@ -25,10 +25,9 @@ void Bsp_Init(void){
 	
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOF, ENABLE);
 	
-	LED_Init();
+	LEDs_Init();
 	
 	TX2_POWER_BTNInit();
-	TX2_POWER_ON();
 
 	TIM3_Config();
 	TIM3_NVIC_Config(0);

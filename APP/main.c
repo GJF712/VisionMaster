@@ -41,6 +41,7 @@ SOFTWARE.
 
 static App_Event_T * App_EventFunc[] = {
 	&EXTI4_Event,
+	&TX2_ON_Event,
 	NULL, };
 static App_Schedule_T App_ScheduleFunc[] = {
 //	{0, 500, LED_Flicker},
@@ -66,6 +67,7 @@ int main(void)
 	static App_Event_T **pApp_EventFunc = App_EventFunc;
 	/* TODO - Add your application code here */
 	Bsp_Init();
+	App_Init();
 
 	/* Infinite loop */
 	while (1)
@@ -78,8 +80,7 @@ int main(void)
 		}
 		
 		if((*pApp_EventFunc)->Event_flag){
-			(*pApp_EventFunc)->APP_Function();
-			(*pApp_EventFunc)->Event_flag = false;
+			(*pApp_EventFunc)->APP_Function(&(*pApp_EventFunc)->Event_flag);
 		}
 		if(*(++pApp_EventFunc) == NULL){
 			pApp_EventFunc = App_EventFunc;

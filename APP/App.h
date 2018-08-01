@@ -14,12 +14,16 @@ typedef struct{
 
 typedef struct{
 	bool Event_flag;
-	void (* const APP_Function)(void);
+	void (* const APP_Function)(bool *Event_flag);
 }App_Event_T;
 
 extern volatile Schedule_TimerDataType Schedule_MS;
+extern App_Event_T TX2_ON_Event;
 
 void App_Init(void);
 bool MS_TimerTrigger(Schedule_TimerDataType * const Last_TimerCounter, Schedule_TimerDataType const MS_Timer);
+Schedule_TimerDataType Get_Schedule_MS(void);
+void TX2_ON(bool *Event_flag);
+void Set_TX2_State(bool State);//1 ON,0 OFF
 
 #endif
