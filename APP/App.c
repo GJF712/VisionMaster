@@ -33,6 +33,7 @@ void Set_TX2_State(bool State){//1 ON,0 OFF
 void TX2_ON(bool *Event_flag){
 	TX2_POWER_ON();
 	if(MS_TimerTrigger(&Last_Set_TX2, 1000)){
+		*Event_flag = false;
 		TX2_POWER_OFF();
 	}
 }
@@ -42,5 +43,4 @@ void TX2_ON(bool *Event_flag){
 ******************************************************************************
 *****************************************************************************/
 void App_Init(void){
-	Set_TX2_State(true);
 }
