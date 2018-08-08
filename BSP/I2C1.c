@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include "App.h"
 
 /* 变量 ----------------------------------------------------------------------*/
 #define I2C_TIMEOUT 249
@@ -182,16 +183,71 @@ b:	I2C_CheckBusy();
 //应用层处理
 //=====================================================================================
 #define TUSB422_I2CAddr	0x40
+#define TUSB422_BoostTo20VMaxStep 5
 uint8_t I2C_Buff[16];
+static uint8_t Step = 0;
+static uint8_t AlertRegister0Data;
+
+void Write_CommandRegister(void){
+	I2C_Buff[0] = 0x99;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x23, I2C_Buff, 1) != 1){
+		Step++;
+	}
+}
+
+void Write_ROLEControlRegister(void){
+	I2C_Buff[0] = 0xA0;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x1A, I2C_Buff, 1) != 1){
+		Step++;
+	}
+}
+
+void Write_AlertRegister0(void){
+	I2C_Buff[0] = AlertRegister0Data & 0x02;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) != 1){
+		Step++;
+	}
+}
+void Power_StatusRegister(void){
+	if(IIC_ReadData(TUSB422_I2CAddr, 0x1E, I2C_Buff, 1) != 1){		
+		if(I2C_Buff[0] & 0x40){
+			Step++;
+		}
+	}
+}
+
+void Read_AlertRegister0(void){
+	if(IIC_ReadData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) != 1){
+		AlertRegister0Data = I2C_Buff[0];		
+		if(AlertRegister0Data & 0x02){
+			Step++;
+		}
+	}
+}
+
 void TUSB422_BoostTo20V(bool *Event_flag){
-	uint16_t VoltageScale = 20 / 5;
-	
-	*Event_flag = false;
-	
-	I2C_Buff[0] = VoltageScale & 0xff;
-	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
-	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) != 2){		
-		if(IIC_WriteData(0x40, 0x70, I2C_Buff, 2) != 2){
+//	uint16_t VoltageScale = 20 / 5;
+//	
+//	*Event_flag = false;
+//	
+//	I2C_Buff[0] = VoltageScale & 0xff;
+//	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
+//	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) != 2){		
+//		if(IIC_WriteData(0x40, 0x70, I2C_Buff, 2) != 2){
+//		}
+//	}
+	static Schedule_TimerDataType Last_TimeHanderTUSB422 = 0;
+	static void (*TUSB422_BoostTo20VHander[TUSB422_BoostTo20VMaxStep])(void) = {
+		Read_AlertRegister0,
+		Power_StatusRegister,
+		Write_AlertRegister0,
+		Write_ROLEControlRegister,
+		Write_CommandRegister,
+	};
+	if(MS_TimerTrigger(&Last_TimeHanderTUSB422, 50)){
+		TUSB422_BoostTo20VHander[Step]();
+		if(++Step == TUSB422_BoostTo20VMaxStep){
+			*Event_flag = false;
 		}
 	}
 }

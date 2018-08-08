@@ -22,6 +22,7 @@ void Bsp_Init(void){
 //		PWR_WakeUpPinCmd(PWR_WakeUpPin_1, ENABLE);
 //		/* 进入待机模式 */
 //		PWR_EnterSTANDBYMode();
+		Set_TX2_State(true);
 	}
 	
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB | RCC_AHBPeriph_GPIOF, ENABLE);

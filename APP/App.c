@@ -1,5 +1,6 @@
 #include "App.h"
 #include "CommonGPIO.h"
+#include "ExternalInterruption.h"
 
 volatile Schedule_TimerDataType Schedule_MS = 0;
 App_Event_T TX2_ON_Event = {false, TX2_ON};
@@ -43,4 +44,7 @@ void TX2_ON(bool *Event_flag){
 ******************************************************************************
 *****************************************************************************/
 void App_Init(void){
+	if(GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) == SET){
+		EXTI4_Event.Event_flag = true;
+	}
 }
