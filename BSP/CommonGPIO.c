@@ -68,7 +68,11 @@ void Ctrl_LEDFunc(Ctrl_LED_COLOR_T Color, Ctrl_LED_STATE_T State){
 	if(Color != LED_B){
 		GPIO_WriteBit(GPIOA, LED_B, (BitAction)LED_OFF_STATE);
 	}
-	GPIO_WriteBit(GPIOA, Color, (BitAction)State);
+	if(TX2_ONOFF_State == 1){
+		GPIO_WriteBit(GPIOA, Color, (BitAction)State);
+	}else{
+		GPIO_WriteBit(GPIOA, Color, (BitAction)LED_OFF_STATE);
+	}
 }
 
 void Ctrl_LEDsFunc(void){
@@ -107,6 +111,7 @@ void Ctrl_LEDsFunc(void){
 	static Schedule_TimerDataType Last_TimerCounter = 0;
 	static Schedule_TimerDataType Last_PWMTimerCounter = 0;
 	
+//	0 && 
 	if((GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) == SET) && (VCC_BAT4S_V != BatteryVoltage)){
 		Ctrl_LEDFunc(LED_B, LED_ON_STATE);
 		Last_TimerCounter = Get_Schedule_MS();
@@ -146,16 +151,16 @@ void TX2_POWER_BTNInit(void){
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
 void TX2_POWER_ON(void){
-    GPIO_SetBits(GPIOA, GPIO_Pin_1);
+    GPIO_ResetBits(GPIOA, GPIO_Pin_2);
 }
 
 void TX2_POWER_OFF(void){
-    GPIO_ResetBits(GPIOA, GPIO_Pin_1);
+    GPIO_SetBits(GPIOA, GPIO_Pin_2);
 }
 
 //==============================================================================================
@@ -167,35 +172,33 @@ static uint8_t Key_PA0_State(void){
 }
 
 static void Callback_Long_Click_Handler(void* btn){
+//	TX2_POWER_ON();
 //	/* 使能WKUP引脚的唤醒功能 */
 //	PWR_WakeUpPinCmd(PWR_WakeUpPin_1, ENABLE);
 //	/* 进入待机模式 */
 //	PWR_EnterSTANDBYMode();
+//	while(1);
+	Set_TX2_State(false);
 }
 
-static void Callback_Press_Down_Handler(void* btn){
-	TX2_POWER_ON();
+static void Callback_Single_Click_Handler(void* btn){
+//	TX2_POWER_OFF();
+	Set_TX2_State(true);
 }
-
-static void Callback_Press_Up_Handler(void* btn){
-	TX2_POWER_OFF();
-}
-
 void Key_PA0_Init(void){
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_StructInit(&GPIO_InitStructure);
 
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	button_init(&Button_Key, Key_PA0_State, 1);
+	button_init(&Button_Key, Key_PA0_State, 0);
 	button_attach(&Button_Key, LONG_PRESS_HOLD, Callback_Long_Click_Handler);
-	button_attach(&Button_Key, PRESS_DOWN, Callback_Press_Down_Handler);
-	button_attach(&Button_Key, PRESS_UP, Callback_Press_Up_Handler);
+	button_attach(&Button_Key, SINGLE_CLICK, Callback_Single_Click_Handler);
 	button_start(&Button_Key);
 }
 

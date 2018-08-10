@@ -54,7 +54,7 @@ void EXIT_PA4_Config(void){
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;       
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;	//配置为上拉输入
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* config the extiline clock and AFIO clock */
@@ -82,6 +82,6 @@ void EXTI4_15_IRQ(void){
 	if(EXTI_GetITStatus(EXTI_Line4) == SET)
 	{
 		EXTI_ClearITPendingBit(EXTI_Line4);
-		EXTI4_Event.Event_flag = true;
+		TUSB422_BoostTo20VInit();
 	}
 }

@@ -1,4 +1,5 @@
 #include "I2C1.h"
+#include "ExternalInterruption.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -48,6 +49,10 @@ static void I2C1_GPIOInit(void)
 #else
 	#error "I2C1 don't select MCU!"
 #endif
+//	GPIO_ResetBits(GPIOA, GPIO_Pin_9);
+//	GPIO_SetBits(GPIOA, GPIO_Pin_10);
+//	while(1);
+	
 }
 
 void I2C1_Config(void)
@@ -93,21 +98,25 @@ void I2C_CheckBusy(void){
 	}else if((Count != 0) && (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY) == RESET)){
 		Count = 0;
 	}
-//	if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ARLO) == SET){
-//		I2C_ClearFlag(I2C1, I2C_FLAG_ARLO);
-//	}
+	if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ARLO) == SET){
+		I2C_ClearFlag(I2C1, I2C_FLAG_ARLO);
+	}
 }
 
 uint16_t IIC_WriteData(uint8_t SlaveAddress, uint8_t DataAddress, uint8_t *buf, uint16_t len){
 	uint16_t timer = 0;
 	uint16_t Index = 0;
+	
+	I2C_CheckBusy();
+	
 	I2C_TransferHandling(I2C1, SlaveAddress << 1, len + 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 
+	
 	timer = I2C_Sa_TIMER;
 	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_TXIS) == RESET){
 		if((timer--) == 0) {
 			goto b;
-			}
+		}
 	}
 	I2C_SendData(I2C1, DataAddress);
 	
@@ -138,6 +147,8 @@ uint16_t IIC_ReadData(uint8_t SlaveAddress, uint8_t DataAddress, uint8_t *buf, u
 	uint16_t timer = 0;
 	uint16_t Index = 0;
 
+	I2C_CheckBusy();
+	
 	I2C_TransferHandling(I2C1, SlaveAddress << 1, 1, I2C_AutoEnd_Mode, I2C_Generate_Start_Write);
 	
 	timer = I2C_Sa_TIMER;
@@ -154,7 +165,7 @@ uint16_t IIC_ReadData(uint8_t SlaveAddress, uint8_t DataAddress, uint8_t *buf, u
 			goto b;
 		}
 	}
-	I2C_TransferHandling(I2C1, 0xf<<1, len, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
+	I2C_TransferHandling(I2C1, SlaveAddress << 1, len, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
 
 	while(len--){
 		timer = I2C_Sa_TIMER;
@@ -182,77 +193,92 @@ b:	I2C_CheckBusy();
 //=====================================================================================
 //应用层处理
 //=====================================================================================
-#define TUSB422_I2CAddr	0x40
-#define TUSB422_BoostTo20VMaxStep 5
+#define TUSB422_I2CAddr	0x20
 uint8_t I2C_Buff[16];
 static uint8_t Step = 0;
 static uint8_t AlertRegister0Data;
+static Schedule_TimerDataType Last_TimeHanderTUSB422 = 0;
+
+void Set_VoltageScale(void){
+	uint16_t VoltageScale = 20 / 5;
+		
+	I2C_Buff[0] = VoltageScale & 0xff;
+	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) == 2){		
+		Step++;
+	}
+}
 
 void Write_CommandRegister(void){
 	I2C_Buff[0] = 0x99;
-	if(IIC_WriteData(TUSB422_I2CAddr, 0x23, I2C_Buff, 1) != 1){
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x23, I2C_Buff, 1) == 1){
 		Step++;
 	}
 }
 
 void Write_ROLEControlRegister(void){
-	I2C_Buff[0] = 0xA0;
-	if(IIC_WriteData(TUSB422_I2CAddr, 0x1A, I2C_Buff, 1) != 1){
+	I2C_Buff[0] = 0x0A;
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x1A, I2C_Buff, 1) == 1){
 		Step++;
 	}
 }
 
 void Write_AlertRegister0(void){
 	I2C_Buff[0] = AlertRegister0Data & 0x02;
-	if(IIC_WriteData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) != 1){
+	if(IIC_WriteData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) == 1){
 		Step++;
 	}
 }
 void Power_StatusRegister(void){
-	if(IIC_ReadData(TUSB422_I2CAddr, 0x1E, I2C_Buff, 1) != 1){		
-		if(I2C_Buff[0] & 0x40){
+	if(IIC_ReadData(TUSB422_I2CAddr, 0x1E, I2C_Buff, 1) == 1){		
+		if((I2C_Buff[0] & 0x40) == 0){
 			Step++;
 		}
 	}
 }
 
 void Read_AlertRegister0(void){
-	if(IIC_ReadData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) != 1){
-		AlertRegister0Data = I2C_Buff[0];		
-		if(AlertRegister0Data & 0x02){
+	if(IIC_ReadData(TUSB422_I2CAddr, 0x10, I2C_Buff, 1) == 1){
+		AlertRegister0Data = I2C_Buff[0];
+		if(AlertRegister0Data & 0x03){
 			Step++;
 		}
 	}
 }
 
+void TUSB422_BoostTo20VInit(void){
+	EXTI4_Event.Event_flag = true;
+	Last_TimeHanderTUSB422 = Get_Schedule_MS();
+}
+
 void TUSB422_BoostTo20V(bool *Event_flag){
-//	uint16_t VoltageScale = 20 / 5;
-//	
-//	*Event_flag = false;
-//	
-//	I2C_Buff[0] = VoltageScale & 0xff;
-//	I2C_Buff[1] = (VoltageScale >> 8) & 0xff;
-//	if(IIC_WriteData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) != 2){		
-//		if(IIC_WriteData(0x40, 0x70, I2C_Buff, 2) != 2){
-//		}
-//	}
-	static Schedule_TimerDataType Last_TimeHanderTUSB422 = 0;
-	static void (*TUSB422_BoostTo20VHander[TUSB422_BoostTo20VMaxStep])(void) = {
-		Read_AlertRegister0,
-		Power_StatusRegister,
-		Write_AlertRegister0,
-		Write_ROLEControlRegister,
-		Write_CommandRegister,
-	};
+
+	#define TUSB422_BoostTo20VMaxStep 6
+
+//	static void (*TUSB422_BoostTo20VHander[TUSB422_BoostTo20VMaxStep])(void) = {
+//		Read_AlertRegister0,
+//		Power_StatusRegister,
+//		Write_AlertRegister0,
+//		Write_ROLEControlRegister,
+//		Write_CommandRegister,
+//		Set_VoltageScale,
+//	};
 	if(MS_TimerTrigger(&Last_TimeHanderTUSB422, 50)){
-		TUSB422_BoostTo20VHander[Step]();
-		if(++Step == TUSB422_BoostTo20VMaxStep){
+		Last_TimeHanderTUSB422 = Get_Schedule_MS();
+//		TUSB422_BoostTo20VHander[Step]();
+		if(Step == TUSB422_BoostTo20VMaxStep){
+//			if(IIC_ReadData(TUSB422_I2CAddr, 0x70, I2C_Buff, 2) == 2){
+//				uint16_t i = I2C_Buff[1];
+//				i = (i << 8) | I2C_Buff[0];
+//				i = i;
+//			}
+			Step = 0;
 			*Event_flag = false;
 		}
 	}
 }
 
-#define BQ25703A_I2CAddr 0x12
+#define BQ25703A_I2CAddr 0x6b
 
 static void MinSystemVoltage(void){
 	uint16_t Voltage = 12800;
@@ -315,10 +341,14 @@ static void IIN_DPM(void){
 }
 
 void BQ25703A_Init(void){
+	ChargeCurrent();
+	MaxChargeVoltage();
 	IIN_DPM();
 	OTGVoltage();
 	OTGCurrent();
-	MaxChargeVoltage();
-	ChargeCurrent();
 	MinSystemVoltage();
+//	if(IIC_ReadData(BQ25703A_I2CAddr, 0x2f, I2C_Buff, 2) == 2){
+
+//	}
+
 }
