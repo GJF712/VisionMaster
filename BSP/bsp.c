@@ -11,6 +11,7 @@
 #include "Usart1.h"
 #include "ExternalInterruption.h"
 #include "I2C1.h"
+#include "ADC1.h"
 
 void Bsp_Init(void){
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR , ENABLE);
@@ -36,6 +37,9 @@ void Bsp_Init(void){
 
 	I2C1_Init();
 
+	ADC1_Init();
+	ADC1_NVIC_Config(1);
+	
 //	TIM14_Config();
 //	TIM14_NVIC_Config(1);
 

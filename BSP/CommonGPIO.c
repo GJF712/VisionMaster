@@ -112,28 +112,35 @@ void Ctrl_LEDsFunc(void){
 	static Schedule_TimerDataType Last_PWMTimerCounter = 0;
 	
 //	0 && 
-	if((GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) == SET) && (VCC_BAT4S_V != BatteryVoltage)){
-		Ctrl_LEDFunc(LED_B, LED_ON_STATE);
-		Last_TimerCounter = Get_Schedule_MS();
-	}else if(VCC_BAT4S_V < BatteryVoltage * 0.2){
-		Ctrl_LEDFunc(LED_R, LED_ON_STATE);
-		Last_PWMTimerCounter = Get_Schedule_MS();
-	}else{
-		static uint8_t SwitchLight = 0;
-		static LED_Flicker_T const *pLED_FlickerCtrl = &LED_FlickerCtrl[0];
-		static LED_PWM_Flicker_T const *pLED_PWM_FlickerCtrl = LED_FlickerCtrl[0].PWM_F;
-		
-		if(MS_TimerTrigger(&Last_TimerCounter, pLED_FlickerCtrl->MS_Timer)){
-			pLED_FlickerCtrl++;
-			if(pLED_FlickerCtrl->MS_Timer == 0){
-				pLED_FlickerCtrl = &LED_FlickerCtrl[0];
-			}
+	if(VCC_BOARD_V > 16000){//ÕýÔÚ³äµç×´Ì¬
+		if(VCC_BAT4S_V >= BatteryVoltage){
+			Ctrl_LEDFunc(LED_G, LED_ON_STATE);
+			Last_TimerCounter = Get_Schedule_MS();
+		}else if(VCC_BAT4S_V < (BatteryVoltage - 400)){
+			Ctrl_LEDFunc(LED_B, LED_ON_STATE);
+			Last_PWMTimerCounter = Get_Schedule_MS();
 		}
-		if(MS_TimerTrigger(&Last_PWMTimerCounter, pLED_PWM_FlickerCtrl->PWMMS_Timer)){
-			SwitchLight = !SwitchLight;
-			pLED_PWM_FlickerCtrl = &pLED_FlickerCtrl->PWM_F[SwitchLight];
-			if(pLED_PWM_FlickerCtrl->PWMMS_Timer != 0){
-				Ctrl_LEDFunc(LED_G, pLED_PWM_FlickerCtrl->State);
+	}else{
+		if((VCC_BAT4S_V > 8400) && (VCC_BAT4S_V < (0.2 * BatteryVoltage))){
+			Ctrl_LEDFunc(LED_R, LED_ON_STATE);
+			Last_PWMTimerCounter = Get_Schedule_MS();
+		}else{
+			static uint8_t SwitchLight = 0;
+			static LED_Flicker_T const *pLED_FlickerCtrl = &LED_FlickerCtrl[0];
+			static LED_PWM_Flicker_T const *pLED_PWM_FlickerCtrl = LED_FlickerCtrl[0].PWM_F;
+			
+			if(MS_TimerTrigger(&Last_TimerCounter, pLED_FlickerCtrl->MS_Timer)){
+				pLED_FlickerCtrl++;
+				if(pLED_FlickerCtrl->MS_Timer == 0){
+					pLED_FlickerCtrl = &LED_FlickerCtrl[0];
+				}
+			}
+			if(MS_TimerTrigger(&Last_PWMTimerCounter, pLED_PWM_FlickerCtrl->PWMMS_Timer)){
+				SwitchLight = !SwitchLight;
+				pLED_PWM_FlickerCtrl = &pLED_FlickerCtrl->PWM_F[SwitchLight];
+				if(pLED_PWM_FlickerCtrl->PWMMS_Timer != 0){
+					Ctrl_LEDFunc(LED_G, pLED_PWM_FlickerCtrl->State);
+				}
 			}
 		}
 	}

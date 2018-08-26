@@ -6,5 +6,8 @@
 extern float VCC_BAT4S_V,  VCC_BOARD_V;
 
 void ADC1_StartTask(void);
+void ADC1_Init(void);
+void ADC1_NVIC_Config(uint8_t Priority);
+void ADC1_IRQ(void);
 
 #endif

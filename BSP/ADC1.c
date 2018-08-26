@@ -27,6 +27,9 @@ void ADC1_CH9_GPIO_Init(void){
 void ADC1_Init(void){
     ADC_InitTypeDef ADC_InitStructure;
 	
+	ADC1_CH1_GPIO_Init();
+	ADC1_CH9_GPIO_Init();
+
 	ADC_StructInit(&ADC_InitStructure);
 	ADC_DeInit(ADC1);
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
@@ -72,14 +75,14 @@ void ADC1_StartTask(void){
 		while(Counting < SAMPLE_COUNT){
 			sum += VCC_BOARD_D[Counting++];
 		}
-		VCC_BOARD_V = 3.3 * sum / SAMPLE_COUNT / 4096 * (1);//括号内是电阻分压系数
+		VCC_BOARD_V = 3.3 * sum / SAMPLE_COUNT / 4096 * 22 / 3 * 1000;//括号内是电阻分压系数
 	}else{//VCC_BAT4S
 		ADC1->CHSELR = ADC_Channel_1;
 		
 		while(Counting < SAMPLE_COUNT){
 			sum += VCC_BAT4S_D[Counting++];
 		}
-		VCC_BAT4S_V = 3.3 * sum / SAMPLE_COUNT / 4096 * (1);//括号内是电阻分压系数
+		VCC_BAT4S_V = 3.3 * sum / SAMPLE_COUNT / 4096 * 22 / 3 * 1000;//括号内是电阻分压系数
 	}
 	if(ADC_GetFlagStatus(ADC1, ADC_FLAG_OVR) == SET){
 		ADC_ClearFlag(ADC1, ADC_FLAG_OVR);

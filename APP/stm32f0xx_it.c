@@ -32,6 +32,8 @@
 #include "Timer.h"
 #include "ExternalInterruption.h"
 #include "Usart1.h"
+#include "ADC1.h"
+
 /** @addtogroup Template_Project
   * @{
   */
@@ -129,6 +131,10 @@ void EXTI4_15_IRQHandler(void)
 	EXTI4_15_IRQ();
 }
 
+void ADC1_IRQHandler(void)
+{
+	ADC1_IRQ();
+}
 /******************************************************************************/
 /*                 STM32F0xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

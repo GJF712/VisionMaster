@@ -46,8 +46,8 @@ static App_Event_T * App_EventFunc[] = {
 	NULL, };
 static App_Schedule_T App_ScheduleFunc[] = {
 //	{0, 500, LED_Flicker},
-	{0, 50, BQ25703A_Init},
-	{0, 50, ADC1_StartTask},
+	{0, 50, Read_BQ25703A_CS},
+	{0, 100, ADC1_StartTask},
 	{0, TICKS_INTERVAL, button_ticks},
 	{0, 500, I2C_CheckBusy},
 	{0, 1, Ctrl_LEDsFunc},

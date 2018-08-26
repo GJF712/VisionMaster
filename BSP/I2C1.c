@@ -340,12 +340,18 @@ static void IIN_DPM(void){
 	}
 }
 
+void Read_BQ25703A_CS(void){
+	if(IIC_ReadData(BQ25703A_I2CAddr, 0x20, I2C_Buff, 2) == 2){		
+		I2C_Buff[0]=I2C_Buff[0];
+	}
+}
+
 void BQ25703A_Init(void){
 	ChargeCurrent();
 	MaxChargeVoltage();
 	IIN_DPM();
-	OTGVoltage();
-	OTGCurrent();
+//	OTGVoltage();
+//	OTGCurrent();
 	MinSystemVoltage();
 //	if(IIC_ReadData(BQ25703A_I2CAddr, 0x2f, I2C_Buff, 2) == 2){
 
